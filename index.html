@@ -39,10 +39,19 @@
   .file-ext { color:#adb5bd; font-size:11px; }
   .toast { position:fixed; top:18px; left:50%; transform:translateX(-50%); background:#2f3542; color:#fff; padding:10px 22px; border-radius:8px; font-size:14px; z-index:99; opacity:0; transition:opacity .3s; pointer-events:none; }
   .toast.show { opacity:1; }
+  .lock-mask { position:fixed; top:0; left:0; right:0; bottom:0; background:linear-gradient(135deg,#3b5bdb,#4263eb); z-index:200; display:flex; align-items:center; justify-content:center; }
+  .lock-box { background:#fff; border-radius:14px; padding:34px 40px; width:340px; max-width:92vw; box-shadow:0 10px 40px rgba(0,0,0,.25); text-align:center; }
+  .lock-title { font-size:19px; font-weight:600; color:#2f3542; margin-bottom:8px; }
+  .lock-label { font-size:13px; color:#666; margin-bottom:14px; }
+  .lock-box input { width:100%; padding:11px 14px; border:1px solid #ced4da; border-radius:8px; font-size:15px; outline:none; margin-bottom:14px; box-sizing:border-box; }
+  .lock-box input:focus { border-color:#4263eb; }
+  .lock-box .btn { width:100%; padding:11px; font-size:15px; }
+  .lock-msg { color:#e03131; font-size:13px; margin-top:10px; min-height:18px; }
   @media (max-width:720px){ .toolbar input { min-width:100%; } header h1{font-size:18px;} }
 </style>
 </head>
 <body>
+  <div id="lock" class="lock-mask"><div class="lock-box"><div class="lock-title">合同资料在线查询</div><div class="lock-label">请输入访问密码</div><input id="pw" type="password" placeholder="访问密码" autocomplete="off"><button class="btn btn-main" onclick="doLogin()">进入查询</button><div class="lock-msg" id="pwMsg"></div></div></div>
 <header>
   <h1>合同资料在线查询</h1>
   <div class="meta" id="meta">加载中…</div>
@@ -113,10 +122,28 @@ function init(){
   render();
 }
 
-document.getElementById('kw').addEventListener('input',apply);
-document.getElementById('year').addEventListener('change',apply);
-document.getElementById('type').addEventListener('change',apply);
-init();
+const PASSWORD_HASH = "e66f3d48156b2f2eaca00f7cd77efbaca729a7607f91ac271177da163f53233a";
+
+async function sha256(s){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function doLogin(){
+  const v=document.getElementById('pw').value;
+  let h='';
+  try { h=await sha256(v); } catch(e){ h=''; }
+  if(h && h===PASSWORD_HASH){
+    document.getElementById('lock').style.display='none';
+    document.getElementById('kw').addEventListener('input',apply);
+    document.getElementById('year').addEventListener('change',apply);
+    document.getElementById('type').addEventListener('change',apply);
+    init();
+  } else {
+    document.getElementById('pwMsg').textContent='密码错误，请重试';
+    document.getElementById('pw').value='';
+  }
+}
+document.getElementById('pw').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
 </script>
 </body>
 </html>
